@@ -75,7 +75,8 @@
 #include <pthread.h>
 
 #define DESIRED_HEIGHT 0.8
-#define EXTRA_HEIGHT 0.5
+//Rob temp
+#define EXTRA_HEIGHT 0.4
 /** The main class for the prgp_ardrone package.
  */
 class PRGPARDrone
@@ -99,6 +100,7 @@ private:
   ros::Subscriber imgSub; /**< Subscriber to get the image from camera by /ardrone/image_raw */
   ros::Subscriber image_cmd_sub; ///
   ros::Publisher image_cmd_pub; ///
+  ros::Subscriber cmd_completed_sub;
 
   //Rob#
   ros::Subscriber cmdCompleteSub;
@@ -126,6 +128,7 @@ private:
   //variables
   double currentPos_x;
   double currentPos_y;
+  double currentPos_z;
   bool start_flag; /**< The value will be true when AR.Drone get the recruiting command from Pi-Swarm */
   bool initialising_PTAM_flag; //Rob# /**The value will be true whilst drone is taking off and performing initial movements to configure PTAM and locate home tag */
   bool aligning_to_home_tag; //Rob# /**The value will be true until the drone has centered above home tag and set new reference */
@@ -139,12 +142,13 @@ private:
   bool home_tag_det; /**< The value will be true to activate the tag detection at the home stage of AR.Drone */
   bool home_detected_flag; /**< The value will be true when tag detected at home stage */
   bool executing_command_flag; //Rob# /**< this value will be true whilst the drone is executing a tum command, it will be set to false after a callback */
+  bool cmd_completed_flag;
   bool home;
   bool image_saved;
   CVD::VideoDisplay * window = NULL;
   const static uint32_t tag_v = 65536;
   const static uint32_t tag_h = 0;
-
+  uint8_t lost_count;
   uint16_t current_tag; /**< change when setTargetTag() is used, 0 for black_roundel, 1 for COCARDE */
   uint16_t target_tag; /**< 0 for black_roundel, 1 for COCARDE, 2 for mixed tag type (current_tag is 0) */
   bool reference_set;
@@ -160,6 +164,7 @@ private:
 
   float offset_x;
   float offset_y;
+  float offset_z;
 
   typedef struct drone_pose
   {
@@ -180,7 +185,7 @@ public:
   void takePicCb(const sensor_msgs::ImageConstPtr img);
   void acquireTagResultCb(const ardrone_autonomy::Navdata &navdataReceived);
   void acquireCurrentStateCb(const tum_ardrone::filter_state &currentState);
-  void imageCb(const std_msgs::Empty msg); ///
+  void cmdFeedbackCb(const std_msgs::Empty msg);
 
   //functions
   void sendCmdToPiswarm();
@@ -188,6 +193,7 @@ public:
   void takeOff();
   void land();
   void sendFlightCmd(std::string c);
+  void sendInitCmd(std::string c);
   void toggleCam();
   void setTargetTag();
   bool initARDrone();
@@ -199,6 +205,7 @@ public:
   void moveToPose(double x, double y, double z, double yaw);
   void stopCmdAndHover();
   void moveBy(double x, double y, double z, double yaw);
+  double yawFromPos(double x_coord, double y_coord);
 };
 
 #endif /* PRGP_ARDRONE_INCLUDE_PRGP_ARDRONE_H_ */
